@@ -23,19 +23,19 @@ class GameRound:
         if player_name in self.player:
             return self.player[player_name]
 
-class Player:
-    def __init__(self, name, verbose=False):
-        """ init method
-        """
-        self.name = name
-        self.checkpoint = 1
-        self.lap = 1
-        self.buffs = []
-        self.verbose = verbose
+# class Player:
+#     def __init__(self, name, verbose=False):
+#         """ init method
+#         """
+#         self.name = name
+#         self.checkpoint = 1
+#         self.lap = 1
+#         self.buffs = []
+#         self.verbose = verbose
 
-        if self.verbose:
-            print(" Player initialized named: {} ".format(self.name))
+#         if self.verbose:
+#             print(" Player initialized named: {} ".format(self.name))
 
 
-    def add_player(self, player_name, player_data):
-        pass
+#     def add_player(self, player_name, player_data):
+#         pass
