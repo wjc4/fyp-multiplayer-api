@@ -9,6 +9,18 @@ other_data = {'game_started': False,'complete_count':0,'order':[]}
 # 'id':'name'
 players = {}
 progress = {}
+host_players = {}
+game_settings = {}
+
+
+# stun: stun and spin other cars
+# boost: speed up
+# slow: slow other car
+# blur: blur screen
+buffs = ('stun', 'boost', 'slow', 'blur')
+losing_buffs = ('stun', 'boost', 'slow', 'blur', 'stun', 'boost')
+winning_buffs = ('slow', 'slow', 'slow', 'blur')
+# winning_buffs = ('boost',)
 
 
 @app.route('/join', methods=['POST', 'PUT'])
@@ -25,6 +37,7 @@ def join_game():
     {
         "id": int,
         "name": int
+        "host": bool
     }
     """
 
@@ -37,11 +50,21 @@ def join_game():
     if data['id'] in players:
         return jsonify({'status': 'player already registered'})
 
+    if len(players) == 0:
+        data['host'] = True
+        host_players[data['id']] = {
+            'name': data['name']
+        }
+    else:
+        data['host'] = False
+
     players[data['id']] = {
         'name': data['name'],
         'ready': False
     }
 
+    # print(players)
+    # print(host_players)
     return jsonify(data)
 
 
@@ -129,6 +152,7 @@ def command():
         "rank":int,
         "num_players": int
         "buffs": arr of {"id":int,"buff":str}
+        "pickup": str
     }
     """
 
@@ -137,12 +161,14 @@ def command():
     if not all(k in data for k in required_keys):
         return jsonify({'status': 'invalid request'})
     
+    progress[data['id']]["pickup"] = 'nothing'
     if data["checkpoint"] != progress[data['id']]["checkpoint"]:
         progress[data['id']]["checkpoint"] = data["checkpoint"]
         progress[data['id']]["lap"] = data["lap"]
         update_rank()
-
-
+        progress[data['id']]["pickup"] = generate_buff(data['id'])
+    
+    update_buffs()
 
     # print(data)
     return jsonify(progress[data['id']])
@@ -186,3 +212,47 @@ def complete():
     else:
         return jsonify({'status': 'not in game'})
     return jsonify({'rank': other_data['complete_count']})
+
+import random
+def generate_buff(player_id):
+    #total_rank = len(progress)
+    rank = progress[player_id]['rank']
+    if (rank == 1):
+        buff = winning_buffs
+    else:
+        buff = losing_buffs
+    randint = int(random.random() * len(buff))
+    selected_buff = buff[randint]
+    effect_buff(selected_buff,player_id)
+    return selected_buff
+
+import time
+def effect_buff(buff, player_id):
+    now = int(time.time())
+    if buff == 'nothing':
+        pass
+    elif buff == 'boost':
+        progress[player_id]['buffs'].append({
+            "id": now+5,
+            "buff":buff
+            })
+    else:
+        if buff == 'stun':
+            expire = now + 3
+        elif buff == 'slow':
+            expire = now + 5
+        elif buff == 'blur':
+            expire = now + 5 
+        for key in progress:
+            if key != player_id:
+                progress[key]['buffs'].append({
+                    "id": expire,
+                    "buff":buff
+                    })
+
+def update_buffs():
+    now = int(time.time())
+    for key in progress:
+        for buff in progress[key]['buffs']:
+            if buff['id'] < now:
+                progress[key]['buffs'].remove(buff)
